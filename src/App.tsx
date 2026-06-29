@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { generateCampaign } from './lib/generate'
+import { scoreHook } from './lib/score'
 import { FALLBACK_HOOKS } from './data/hooks'
-import type { GenerationResult, HookFormula, Intake } from './types'
+import type { GenerationResult, HookFormula, Intake, ScoredHook } from './types'
 
 const DEFAULT_INTAKE: Intake = {
   company: 'Acme Wealth',
@@ -30,6 +31,9 @@ export default function App() {
   const [disclaimers, setDisclaimers] = useState<string[]>(FALLBACK_DISCLAIMERS)
   const [source, setSource] = useState('loading…')
   const [result, setResult] = useState<GenerationResult | null>(null)
+  const [aiHooks, setAiHooks] = useState<ScoredHook[]>([])
+  const [aiScript, setAiScript] = useState<Record<string, string> | null>(null)
+  const [aiStatus, setAiStatus] = useState('')
 
   useEffect(() => {
     ;(async () => {
@@ -54,6 +58,20 @@ export default function App() {
 
   function generate() {
     setResult(generateCampaign(intake, formulas, banned, disclaimers))
+  }
+
+  async function generateAI() {
+    setAiStatus('Generating with Gemini…'); setAiHooks([]); setAiScript(null)
+    const { data, error } = await supabase.functions.invoke('generate', { body: { intake } })
+    if (error) { setAiStatus(`AI error: ${error.message}`); return }
+    const d = data as any
+    if (d?.error) { setAiStatus(`AI not ready — ${d.message ?? d.error}`); return }
+    const raw = (d?.hooks ?? []) as { category: string; text: string }[]
+    const scored = raw.map((h) => { const s = scoreHook(h.text, intake, banned); s.category = h.category; return s })
+    scored.sort((a, b) => b.score - a.score)
+    setAiHooks(scored)
+    setAiScript(d?.script ?? null)
+    setAiStatus(`Gemini returned ${scored.length} hooks`)
   }
 
   return (
@@ -99,14 +117,40 @@ export default function App() {
             <input type="checkbox" checked={intake.regulated} onChange={(e) => set('regulated', e.target.checked)} />
             Regulated (finance / insurance — apply compliance gate)
           </label>
-          <button onClick={generate} style={{ padding: '10px 18px', cursor: 'pointer', fontWeight: 600 }}>
-            Generate campaign →
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button onClick={generate} style={{ padding: '10px 18px', cursor: 'pointer', fontWeight: 600 }}>
+              Generate (rules)
+            </button>
+            <button onClick={generateAI} style={{ padding: '10px 18px', cursor: 'pointer' }}>
+              ✨ AI mode (Gemini)
+            </button>
+          </div>
+          {aiStatus && <p style={{ fontSize: 12, color: '#888', marginTop: 8 }}>{aiStatus}</p>}
         </section>
 
         {/* Output */}
         <section style={{ flex: '2 1 440px', minWidth: 320 }}>
-          {!result && <p style={{ color: '#999' }}>Fill the ingredients and hit Generate.</p>}
+          {!result && aiHooks.length === 0 && <p style={{ color: '#999' }}>Fill the ingredients and hit Generate.</p>}
+
+          {aiHooks.length > 0 && (
+            <div style={{ marginBottom: 22 }}>
+              <h2 style={{ fontSize: 16 }}>✨ AI hooks (Gemini, scored)</h2>
+              {aiHooks.slice(0, 8).map((h, i) => (
+                <div key={i} style={{ borderBottom: '1px solid #eee', padding: '8px 0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                    <span style={{ fontWeight: 600 }}>{h.text}</span>
+                    <span style={{ whiteSpace: 'nowrap', fontWeight: 700, color: h.score >= 80 ? '#1a7f37' : h.score >= 60 ? '#9a6700' : '#b42318' }}>{h.score}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#999' }}>{h.category} · {h.band}{h.flags.length ? ` · ⚠️ ${h.flags.length}` : ''}</div>
+                </div>
+              ))}
+              {aiScript && (
+                <div style={{ marginTop: 10, fontSize: 13, background: '#f7f7f8', padding: 10, borderRadius: 6 }}>
+                  <strong>Script:</strong> {aiScript.hook} → {aiScript.context} → {aiScript.rehook} → {aiScript.payoff} → <em>{aiScript.cta}</em>
+                </div>
+              )}
+            </div>
+          )}
           {result && (
             <>
               {result.complianceFlags.length > 0 && (
