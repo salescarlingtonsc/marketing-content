@@ -5,7 +5,7 @@ import { aggregateBy, ageBand, type GroupMetrics, type SpendByCampaign } from '.
 type Dim = 'campaign' | 'prize' | 'ad_name' | 'ad_set_name' | 'gender' | 'age' | 'savings' | 'platform' | 'creative_angle'
 
 const DIMS: [Dim, string][] = [
-  ['campaign', 'Campaign'], ['prize', 'Prize'], ['ad_name', 'Ad'], ['ad_set_name', 'Ad set'],
+  ['campaign', 'Campaign'], ['prize', 'Prize'], ['ad_name', 'Ad'], ['ad_set_name', 'Ad group'],
   ['gender', 'Gender'], ['age', 'Age band'], ['savings', 'Savings band'], ['platform', 'Platform'], ['creative_angle', 'Creative angle'],
 ]
 

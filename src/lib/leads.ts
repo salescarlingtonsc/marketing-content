@@ -106,7 +106,7 @@ export const LEAD_FIELDS = ['name', 'phone', 'email', 'age', 'birth_year', 'gend
 export async function importLeads(
   rows: Record<string, string>[],
   mapping: Record<string, string>,
-  ctx: { company_id?: string | null; campaign_id?: string | null; prize?: string; consent_source?: string; filename?: string },
+  ctx: { company_id?: string | null; campaign_id?: string | null; prize?: string; platform?: string; consent_source?: string; filename?: string },
   cfg: ScoringConfig,
 ) {
   const get = (r: Record<string, string>, field: string) => { const h = mapping[field]; return h ? (r[h] ?? '').trim() : '' }
@@ -127,7 +127,7 @@ export async function importLeads(
       age: Number.isFinite(age as number) ? age : null, gender: get(r, 'gender') || null,
       monthly_savings: msv, savings_band: band,
       occupation: get(r, 'occupation') || null, investing_experience: get(r, 'investing_experience') || null, risk_appetite: get(r, 'risk_appetite') || null,
-      platform: get(r, 'platform') || null, prize: get(r, 'prize') || ctx.prize || null,
+      platform: get(r, 'platform') || ctx.platform || null, prize: get(r, 'prize') || ctx.prize || null,
       ad_name: get(r, 'ad') || null, ad_set_name: get(r, 'ad_set') || null, creative_angle: get(r, 'creative_angle') || null,
       form_name: get(r, 'form') || null, remarks: get(r, 'remarks') || null,
       source: 'csv_meta', consent: true, consent_source: ctx.consent_source || 'lead_form', status: 'new',

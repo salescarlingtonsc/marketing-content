@@ -24,6 +24,7 @@ export default function LeadsView() {
   const [headers, setHeaders] = useState<string[]>([])
   const [mapping, setMapping] = useState<Record<string, string>>({})
   const [consent, setConsent] = useState(false)
+  const [platform, setPlatform] = useState('TikTok')
 
   async function refresh() {
     setCampaigns(await listCampaigns())
@@ -49,7 +50,7 @@ export default function LeadsView() {
         name: m.name || null, phone: m.phone || null,
         monthly_savings: m.monthly_savings ? Number(m.monthly_savings) : null,
         age: m.age ? Number(m.age) : null, occupation: m.occupation || null, prize: m.prize || null,
-        source: 'manual', consent: true,
+        platform, source: 'manual', consent: true,
       }, cfg)
       setM({ name: '', phone: '', monthly_savings: '', age: '', occupation: '', prize: '' })
       setMsg('✓ Lead added + scored'); refresh()
@@ -76,7 +77,7 @@ export default function LeadsView() {
     if (!consent) { setMsg('Tick the consent confirmation before importing leads (PDPA).'); return }
     setMsg('Importing…')
     try {
-      const r = await importLeads(rows, mapping, { campaign_id: campaignId || null, consent_source: 'meta_lead_form', filename: 'pasted.csv' }, cfg)
+      const r = await importLeads(rows, mapping, { campaign_id: campaignId || null, platform, consent_source: `${platform.toLowerCase()}_lead_form`, filename: 'pasted.csv' }, cfg)
       setMsg(`✓ Imported + scored ${r.count} leads`); setCsvText(''); setRows([]); setHeaders([]); refresh()
     } catch (e: any) { setMsg('Import error: ' + (e.message ?? e)) }
   }
@@ -102,6 +103,17 @@ export default function LeadsView() {
           {campaigns.map((c) => <option key={c.id} value={c.id}>{c.name || '(unnamed)'} {c.prize ? `· ${c.prize}` : ''}</option>)}
         </select>
         <button onClick={newCampaign} style={{ padding: '6px 12px', cursor: 'pointer' }}>+ New campaign</button>
+        <label style={{ fontSize: 13, color: '#666' }}>
+          Platform:{' '}
+          <select value={platform} onChange={(e) => setPlatform(e.target.value)} style={{ padding: 6 }}>
+            <option value="TikTok">TikTok</option>
+            <option value="Instagram">Instagram</option>
+            <option value="Facebook">Facebook</option>
+            <option value="YouTube">YouTube</option>
+            <option value="Google">Google</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
         <span style={{ fontSize: 13, color: '#666' }}>
           {leads.length} leads · {['hot', 'warm', 'nurture', 'giveaway-only', 'trash'].map((t) => `${counts[t] || 0} ${t}`).join(' · ')}
         </span>
@@ -128,7 +140,7 @@ export default function LeadsView() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 12 }}>
                 {LEAD_FIELDS.map((field) => (
                   <label key={field} style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ color: '#888' }}>{field}</span>
+                    <span style={{ color: '#888' }}>{field === 'ad_set' ? 'ad group' : field}</span>
                     <select value={mapping[field] || ''} onChange={(e) => setMapping((p) => ({ ...p, [field]: e.target.value }))} style={{ padding: 4 }}>
                       <option value="">—</option>
                       {headers.map((h) => <option key={h} value={h}>{h}</option>)}
