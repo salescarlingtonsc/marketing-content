@@ -31,8 +31,6 @@ jobs:
           VITE_SUPABASE_URL: https://cribsxrkpxdzfdjjqyru.supabase.co
           VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyaWJzeHJrcHhkemZkampxeXJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MjEzNTYsImV4cCI6MjA5ODI5NzM1Nn0.kqvx14-aiENKXReEL55SeLNPSGx4jao6dTQG363FZAQ
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
