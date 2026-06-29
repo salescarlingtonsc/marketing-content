@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { generateCampaign } from './lib/generate'
 import { scoreHook } from './lib/score'
-import { saveCampaign } from './lib/save'
+import { saveCampaign, loadCampaigns } from './lib/save'
+import type { SavedCampaign } from './lib/save'
 import { FALLBACK_HOOKS } from './data/hooks'
 import Login from './components/Login'
 import type { GenerationResult, HookFormula, Intake, ScoredHook } from './types'
@@ -41,12 +42,18 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [authReady, setAuthReady] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
+  const [saved, setSaved] = useState<SavedCampaign[]>([])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthReady(true) })
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
     return () => sub.subscription.unsubscribe()
   }, [])
+
+  async function loadSaved() {
+    try { setSaved(await loadCampaigns()) } catch { /* not signed in yet */ }
+  }
+  useEffect(() => { if (session) loadSaved() }, [session])
 
   useEffect(() => {
     ;(async () => {
@@ -95,6 +102,7 @@ export default function App() {
     try {
       const r = await saveCampaign(intake, hooks)
       setSaveMsg(`✓ Saved "${intake.company}" + ${r.count} ideas`)
+      loadSaved()
     } catch (e: any) {
       setSaveMsg(`Save failed: ${e.message ?? e}`)
     }
@@ -278,8 +286,28 @@ export default function App() {
         </section>
       </div>
 
+      <section style={{ marginTop: 32, borderTop: '1px solid #eee', paddingTop: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <h2 style={{ fontSize: 16 }}>Saved campaigns ({saved.length})</h2>
+          <button onClick={loadSaved} style={{ fontSize: 12, padding: '3px 10px', cursor: 'pointer' }}>Refresh</button>
+        </div>
+        {saved.length === 0 && <p style={{ color: '#999', fontSize: 13 }}>None yet — generate a campaign and hit Save.</p>}
+        {saved.map((c) => (
+          <details key={c.id} style={{ borderBottom: '1px solid #f0f0f0', padding: '6px 0', fontSize: 13 }}>
+            <summary style={{ cursor: 'pointer' }}>
+              <strong>{c.name}</strong> <span style={{ color: '#999' }}>· {c.industry} · {c.content_ideas.length} ideas · {new Date(c.created_at).toLocaleDateString()}</span>
+            </summary>
+            <ul style={{ marginTop: 6 }}>
+              {c.content_ideas.slice(0, 10).map((idea, i) => (
+                <li key={i}><span style={{ color: '#999' }}>[{idea.angle} · {idea.viral_score}]</span> {idea.hook}</li>
+              ))}
+            </ul>
+          </details>
+        ))}
+      </section>
+
       <p style={{ color: '#bbb', fontSize: 12, marginTop: 28 }}>
-        Rule-based draft generator (deterministic). AI mode (polished copy via an LLM edge function) activates once an API key is configured.
+        Rule-based draft generator (deterministic). AI mode (polished copy via Gemini) generates a full campaign; Save persists it to your database.
       </p>
     </main>
   )

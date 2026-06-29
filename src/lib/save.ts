@@ -29,3 +29,23 @@ export async function saveCampaign(intake: Intake, hooks: ScoredHook[]) {
 
   return { companyId: company!.id as string, count: rows.length }
 }
+
+export interface SavedCampaign {
+  id: string
+  name: string
+  industry: string | null
+  created_at: string
+  content_ideas: { angle: string | null; hook: string | null; viral_score: number | null }[]
+}
+
+// Loads saved campaigns (company + its content ideas). Requires auth (RLS).
+export async function loadCampaigns(): Promise<SavedCampaign[]> {
+  const { data, error } = await supabase
+    .from('companies')
+    .select('id,name,industry,created_at,content_ideas(angle,hook,viral_score)')
+    .order('created_at', { ascending: false })
+    .limit(50)
+  if (error) throw error
+  return (data ?? []) as SavedCampaign[]
+}
+
