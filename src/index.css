@@ -1,0 +1,9 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #fff; color: #111; }
+@media (prefers-color-scheme: dark) {
+  body { background: #0f0f0f; color: #eee; }
+  code { background: #222; }
+}
+button { border: 1px solid currentColor; border-radius: 6px; background: transparent; color: inherit; }
+code { background: #f2f2f2; padding: 1px 5px; border-radius: 4px; }
