@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { generateCampaign } from './lib/generate'
 import { scoreHook } from './lib/score'
+import { saveCampaign } from './lib/save'
 import { FALLBACK_HOOKS } from './data/hooks'
+import Login from './components/Login'
 import type { GenerationResult, HookFormula, Intake, ScoredHook } from './types'
+import type { Session } from '@supabase/supabase-js'
 
 const DEFAULT_INTAKE: Intake = {
   company: 'Acme Wealth',
@@ -35,6 +38,15 @@ export default function App() {
   const [aiScript, setAiScript] = useState<Record<string, string> | null>(null)
   const [aiExtra, setAiExtra] = useState<any>(null)
   const [aiStatus, setAiStatus] = useState('')
+  const [session, setSession] = useState<Session | null>(null)
+  const [authReady, setAuthReady] = useState(false)
+  const [saveMsg, setSaveMsg] = useState('')
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthReady(true) })
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
+    return () => sub.subscription.unsubscribe()
+  }, [])
 
   useEffect(() => {
     ;(async () => {
@@ -76,9 +88,30 @@ export default function App() {
     setAiStatus(`Gemini returned a full campaign (${scored.length} hooks)`)
   }
 
+  async function save() {
+    const hooks = aiHooks.length ? aiHooks : result?.hooks ?? []
+    if (!hooks.length) { setSaveMsg('Generate a campaign first.'); return }
+    setSaveMsg('Saving…')
+    try {
+      const r = await saveCampaign(intake, hooks)
+      setSaveMsg(`✓ Saved "${intake.company}" + ${r.count} ideas`)
+    } catch (e: any) {
+      setSaveMsg(`Save failed: ${e.message ?? e}`)
+    }
+  }
+
+  if (!authReady) return null
+  if (!session) return <Login />
+
   return (
     <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 1040, margin: '32px auto', padding: '0 18px' }}>
-      <h1 style={{ marginBottom: 2 }}>Super Marketing Brain</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+        <h1 style={{ marginBottom: 2 }}>Super Marketing Brain</h1>
+        <span style={{ fontSize: 12, color: '#999' }}>
+          {session.user.email}{' '}
+          <button onClick={() => supabase.auth.signOut()} style={{ marginLeft: 6, fontSize: 12, padding: '2px 8px', cursor: 'pointer' }}>Sign out</button>
+        </span>
+      </div>
       <p style={{ color: '#777', marginTop: 0, fontSize: 14 }}>
         Intake → campaign. Same logic, different ingredients. Reference data: <strong>{source}</strong>.
       </p>
@@ -126,8 +159,12 @@ export default function App() {
             <button onClick={generateAI} style={{ padding: '10px 18px', cursor: 'pointer' }}>
               ✨ AI mode (Gemini)
             </button>
+            <button onClick={save} style={{ padding: '10px 18px', cursor: 'pointer' }}>
+              💾 Save campaign
+            </button>
           </div>
           {aiStatus && <p style={{ fontSize: 12, color: '#888', marginTop: 8 }}>{aiStatus}</p>}
+          {saveMsg && <p style={{ fontSize: 12, color: '#555', marginTop: 4 }}>{saveMsg}</p>}
         </section>
 
         {/* Output */}
