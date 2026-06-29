@@ -1,44 +1,162 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
-import { MODULES } from './modules'
+import { generateCampaign } from './lib/generate'
+import { FALLBACK_HOOKS } from './data/hooks'
+import type { GenerationResult, HookFormula, Intake } from './types'
+
+const DEFAULT_INTAKE: Intake = {
+  company: 'Acme Wealth',
+  industry: 'financial advisory',
+  audience: 'working parents 30-40 in Singapore',
+  pain: 'no income protection if something happens',
+  desire: 'financial security for their family',
+  offer: 'a free 15-minute protection-gap review',
+  price: 'S$0',
+  platform: 'TikTok / Reels',
+  goal: 'appointment',
+  regulated: true,
+}
+
+const FALLBACK_DISCLAIMERS = [
+  'Educational only, not financial advice.',
+  'Past performance is not indicative of future results.',
+  'Speak to a licensed adviser and complete an FNA before deciding.',
+]
 
 export default function App() {
-  const [status, setStatus] = useState<string>('Not tested')
+  const [intake, setIntake] = useState<Intake>(DEFAULT_INTAKE)
+  const [formulas, setFormulas] = useState<HookFormula[]>(FALLBACK_HOOKS)
+  const [banned, setBanned] = useState<string[]>([])
+  const [disclaimers, setDisclaimers] = useState<string[]>(FALLBACK_DISCLAIMERS)
+  const [source, setSource] = useState('loading…')
+  const [result, setResult] = useState<GenerationResult | null>(null)
 
-  async function testDb() {
-    setStatus('Testing…')
-    // companies has RLS enabled with no anon policy yet, so a count of 0
-    // (and NO error) confirms the table exists and the connection works.
-    const { error } = await supabase.from('companies').select('*', { count: 'exact', head: true })
-    if (error) {
-      setStatus(`DB reachable, table check: ${error.message}`)
-    } else {
-      setStatus('✅ Connected to Supabase — schema present.')
-    }
+  useEffect(() => {
+    ;(async () => {
+      const { data: f } = await supabase.from('hook_formulas').select('category,formula,why')
+      const { data: c } = await supabase.from('compliance_rules').select('industry,banned_phrases,required_disclaimers')
+      if (f && f.length) {
+        setFormulas(f as HookFormula[])
+        setSource(`Supabase (${f.length} hook formulas live)`)
+      } else {
+        setSource('offline fallback (bundled hooks)')
+      }
+      if (c && c.length) {
+        const allBanned = c.flatMap((r: any) => r.banned_phrases ?? [])
+        setBanned(allBanned)
+        const fin = c.find((r: any) => r.industry === 'finance')
+        if (fin?.required_disclaimers?.length) setDisclaimers(fin.required_disclaimers)
+      }
+    })()
+  }, [])
+
+  const set = (k: keyof Intake, v: string | boolean) => setIntake((p) => ({ ...p, [k]: v }))
+
+  function generate() {
+    setResult(generateCampaign(intake, formulas, banned, disclaimers))
   }
 
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 760, margin: '40px auto', padding: '0 20px' }}>
-      <h1>Super Marketing Brain</h1>
-      <p style={{ color: '#555' }}>
-        Reusable cross-industry marketing intelligence. Same backend logic, different ingredients.
-        Super-admin tool — separate from all other products.
+    <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 1040, margin: '32px auto', padding: '0 18px' }}>
+      <h1 style={{ marginBottom: 2 }}>Super Marketing Brain</h1>
+      <p style={{ color: '#777', marginTop: 0, fontSize: 14 }}>
+        Intake → campaign. Same logic, different ingredients. Reference data: <strong>{source}</strong>.
       </p>
 
-      <button onClick={testDb} style={{ padding: '8px 14px', cursor: 'pointer' }}>
-        Test database connection
-      </button>
-      <p><strong>Status:</strong> {status}</p>
+      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        {/* Intake */}
+        <section style={{ flex: '1 1 320px', minWidth: 300 }}>
+          <h2 style={{ fontSize: 16 }}>1. Ingredients (intake)</h2>
+          {([
+            ['company', 'Company'],
+            ['industry', 'Industry'],
+            ['audience', 'Best-customer audience'],
+            ['pain', 'Top pain'],
+            ['desire', 'Top desire'],
+            ['offer', 'Offer / dream outcome'],
+            ['price', 'Price'],
+            ['platform', 'Platform'],
+          ] as [keyof Intake, string][]).map(([k, label]) => (
+            <label key={k} style={{ display: 'block', marginBottom: 8, fontSize: 13 }}>
+              <span style={{ color: '#888' }}>{label}</span>
+              <input
+                value={String(intake[k])}
+                onChange={(e) => set(k, e.target.value)}
+                style={{ width: '100%', padding: 7, marginTop: 2, boxSizing: 'border-box' }}
+              />
+            </label>
+          ))}
+          <label style={{ display: 'block', marginBottom: 8, fontSize: 13 }}>
+            <span style={{ color: '#888' }}>Goal</span>
+            <select value={intake.goal} onChange={(e) => set('goal', e.target.value)} style={{ width: '100%', padding: 7, marginTop: 2 }}>
+              <option value="lead">Lead</option>
+              <option value="appointment">Appointment</option>
+              <option value="sale">Sale</option>
+              <option value="followers">Followers</option>
+            </select>
+          </label>
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, marginBottom: 12 }}>
+            <input type="checkbox" checked={intake.regulated} onChange={(e) => set('regulated', e.target.checked)} />
+            Regulated (finance / insurance — apply compliance gate)
+          </label>
+          <button onClick={generate} style={{ padding: '10px 18px', cursor: 'pointer', fontWeight: 600 }}>
+            Generate campaign →
+          </button>
+        </section>
 
-      <h2>The 20-module pipeline</h2>
-      <ol>
-        {MODULES.map((m) => (
-          <li key={m}>{m.replace(/^\d+\.\s/, '')}</li>
-        ))}
-      </ol>
+        {/* Output */}
+        <section style={{ flex: '2 1 440px', minWidth: 320 }}>
+          {!result && <p style={{ color: '#999' }}>Fill the ingredients and hit Generate.</p>}
+          {result && (
+            <>
+              {result.complianceFlags.length > 0 && (
+                <div style={{ background: '#fff3f0', border: '1px solid #f1b7a8', padding: 10, borderRadius: 6, marginBottom: 14, fontSize: 13 }}>
+                  <strong>⚠️ Compliance flags</strong>
+                  <ul style={{ margin: '6px 0 0' }}>{result.complianceFlags.map((f, i) => <li key={i}>{f}</li>)}</ul>
+                </div>
+              )}
 
-      <p style={{ color: '#999', fontSize: 13 }}>
-        Strategy + specs live in <code>/docs</code>. Schema in <code>/supabase/migrations</code>.
+              <h2 style={{ fontSize: 16 }}>2. Hooks (scored, ranked)</h2>
+              {result.hooks.slice(0, 8).map((h, i) => (
+                <div key={i} style={{ borderBottom: '1px solid #eee', padding: '8px 0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                    <span style={{ fontWeight: 600 }}>{h.text}</span>
+                    <span title={h.band} style={{ whiteSpace: 'nowrap', fontWeight: 700, color: h.score >= 80 ? '#1a7f37' : h.score >= 60 ? '#9a6700' : '#b42318' }}>
+                      {h.score}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#999' }}>{h.category} · {h.band} · {h.why}{h.flags.length ? ` · ⚠️ ${h.flags.length}` : ''}</div>
+                </div>
+              ))}
+
+              <h2 style={{ fontSize: 16, marginTop: 20 }}>3. 7-day calendar</h2>
+              <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
+                <thead><tr style={{ textAlign: 'left', color: '#888' }}><th>Day</th><th>Pillar</th><th>Format</th><th>Hook</th></tr></thead>
+                <tbody>
+                  {result.calendar.map((c) => (
+                    <tr key={c.day} style={{ borderTop: '1px solid #eee' }}>
+                      <td>{c.day}</td><td>{c.pillar}</td><td>{c.format}</td><td>{c.hook}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <h2 style={{ fontSize: 16, marginTop: 20 }}>4. Lead-form questions</h2>
+              <ol style={{ fontSize: 13, paddingLeft: 18 }}>{result.leadFormQuestions.map((q, i) => <li key={i}>{q}</li>)}</ol>
+
+              {result.disclaimers.length > 0 && (
+                <>
+                  <h2 style={{ fontSize: 16, marginTop: 20 }}>5. Required disclaimers</h2>
+                  <ul style={{ fontSize: 13, color: '#555' }}>{result.disclaimers.map((d, i) => <li key={i}>{d}</li>)}</ul>
+                </>
+              )}
+            </>
+          )}
+        </section>
+      </div>
+
+      <p style={{ color: '#bbb', fontSize: 12, marginTop: 28 }}>
+        Rule-based draft generator (deterministic). AI mode (polished copy via an LLM edge function) activates once an API key is configured.
       </p>
     </main>
   )
