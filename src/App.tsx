@@ -6,6 +6,8 @@ import { saveCampaign, loadCampaigns } from './lib/save'
 import type { SavedCampaign } from './lib/save'
 import { FALLBACK_HOOKS } from './data/hooks'
 import Login from './components/Login'
+import AdminUsers from './components/AdminUsers'
+import { getMyProfile, type Profile } from './lib/admin'
 import type { GenerationResult, HookFormula, Intake, ScoredHook } from './types'
 import type { Session } from '@supabase/supabase-js'
 
@@ -43,12 +45,20 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
   const [saved, setSaved] = useState<SavedCampaign[]>([])
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profileReady, setProfileReady] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthReady(true) })
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
     return () => sub.subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!session) { setProfile(null); setProfileReady(false); return }
+    setProfileReady(false)
+    getMyProfile().then((p) => { setProfile(p); setProfileReady(true) }).catch(() => setProfileReady(true))
+  }, [session])
 
   async function loadSaved() {
     try { setSaved(await loadCampaigns()) } catch { /* not signed in yet */ }
@@ -110,6 +120,21 @@ export default function App() {
 
   if (!authReady) return null
   if (!session) return <Login />
+  if (!profileReady) return null
+  if (!profile || profile.status !== 'approved') {
+    return (
+      <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 420, margin: '80px auto', padding: '0 18px', textAlign: 'center' }}>
+        <h1 style={{ fontSize: 20 }}>Account {profile?.status ?? 'pending'}</h1>
+        <p style={{ color: '#666', fontSize: 14 }}>
+          {profile?.status === 'rejected'
+            ? 'Your access request was declined by the owner.'
+            : 'Your account is pending owner approval. You will get access once approved.'}
+        </p>
+        <p style={{ color: '#999', fontSize: 12 }}>{session.user.email}</p>
+        <button onClick={() => supabase.auth.signOut()} style={{ padding: '8px 16px', cursor: 'pointer' }}>Sign out</button>
+      </main>
+    )
+  }
 
   return (
     <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 1040, margin: '32px auto', padding: '0 18px' }}>
@@ -123,6 +148,8 @@ export default function App() {
       <p style={{ color: '#777', marginTop: 0, fontSize: 14 }}>
         Intake → campaign. Same logic, different ingredients. Reference data: <strong>{source}</strong>.
       </p>
+
+      {profile.role === 'owner' && <AdminUsers />}
 
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         {/* Intake */}
