@@ -6,7 +6,7 @@ Reusable cross-industry marketing intelligence — **same backend logic, differe
 
 ## Stack
 - Vite + React + TypeScript
-- Supabase (Postgres) — project `marketing-content` (ref `tbkepbnplpcmhtnhfsbr`, ap-southeast-1)
+- Supabase (Postgres) — project `Marketing content` (ref `cribsxrkpxdzfdjjqyru`, ap-northeast-2), a dedicated standalone account
 
 ## Setup
 ```bash
