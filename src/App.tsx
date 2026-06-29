@@ -33,6 +33,7 @@ export default function App() {
   const [result, setResult] = useState<GenerationResult | null>(null)
   const [aiHooks, setAiHooks] = useState<ScoredHook[]>([])
   const [aiScript, setAiScript] = useState<Record<string, string> | null>(null)
+  const [aiExtra, setAiExtra] = useState<any>(null)
   const [aiStatus, setAiStatus] = useState('')
 
   useEffect(() => {
@@ -71,7 +72,8 @@ export default function App() {
     scored.sort((a, b) => b.score - a.score)
     setAiHooks(scored)
     setAiScript(d?.script ?? null)
-    setAiStatus(`Gemini returned ${scored.length} hooks`)
+    setAiExtra({ adCopy: d?.adCopy, leadMagnet: d?.leadMagnet, followUp: d?.followUp ?? [], objections: d?.objections ?? [] })
+    setAiStatus(`Gemini returned a full campaign (${scored.length} hooks)`)
   }
 
   return (
@@ -147,6 +149,46 @@ export default function App() {
               {aiScript && (
                 <div style={{ marginTop: 10, fontSize: 13, background: '#f7f7f8', padding: 10, borderRadius: 6 }}>
                   <strong>Script:</strong> {aiScript.hook} → {aiScript.context} → {aiScript.rehook} → {aiScript.payoff} → <em>{aiScript.cta}</em>
+                </div>
+              )}
+
+              {aiExtra?.adCopy && (
+                <div style={{ marginTop: 12, fontSize: 13 }}>
+                  <strong>Meta ad copy</strong>
+                  <div style={{ color: '#444', marginTop: 4 }}>{aiExtra.adCopy.primaryText}</div>
+                  <div style={{ color: '#888' }}><em>{aiExtra.adCopy.headline}</em> — {aiExtra.adCopy.description}</div>
+                </div>
+              )}
+
+              {aiExtra?.leadMagnet && (
+                <div style={{ marginTop: 12, fontSize: 13 }}>
+                  <strong>Lead magnet:</strong> {aiExtra.leadMagnet.title}
+                  <div style={{ color: '#666' }}>{aiExtra.leadMagnet.description}</div>
+                  <div style={{ color: '#999', fontSize: 12 }}>Screens out: {aiExtra.leadMagnet.filters}</div>
+                </div>
+              )}
+
+              {aiExtra?.followUp?.length > 0 && (
+                <div style={{ marginTop: 12, fontSize: 13 }}>
+                  <strong>Follow-up sequence</strong>
+                  <ol style={{ paddingLeft: 18, marginTop: 4 }}>
+                    {aiExtra.followUp.map((s: any, i: number) => (
+                      <li key={i} style={{ marginBottom: 4 }}>
+                        <span style={{ color: '#888' }}>[{s.channel} · {s.timing}]</span> {s.message}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {aiExtra?.objections?.length > 0 && (
+                <div style={{ marginTop: 12, fontSize: 13 }}>
+                  <strong>Objection handling</strong>
+                  {aiExtra.objections.map((o: any, i: number) => (
+                    <div key={i} style={{ marginTop: 4 }}>
+                      <span style={{ color: '#b42318' }}>“{o.objection}”</span> → {o.response}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

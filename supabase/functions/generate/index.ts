@@ -36,10 +36,18 @@ Top pain: ${i.pain}
 Top desire: ${i.desire}
 Offer: ${i.offer} | Price: ${i.price} | Platform: ${i.platform} | Goal: ${i.goal}
 
-Task: produce 10 distinct short-form video hooks for this business across varied angles
-(curiosity, fear/loss, mistake, contrarian, identity, before/after, secret, case study, comparison, "most get this wrong").
-Also produce ONE 21-34s script for the strongest hook (hook, context, re-hook, payoff, CTA).
-Return JSON exactly: {"hooks":[{"category":string,"text":string}],"script":{"hook":string,"context":string,"rehook":string,"payoff":string,"cta":string}}`
+Task: produce a full campaign starter for this business. For regulated businesses keep everything
+educational (no guarantees, no advice before a fact-find) and the follow-up assumes the lead has
+consented to contact.
+Return JSON EXACTLY in this shape:
+{
+  "hooks":[{"category":string,"text":string}],                 // 10 across varied angles
+  "script":{"hook":string,"context":string,"rehook":string,"payoff":string,"cta":string}, // for the strongest hook, 21-34s
+  "adCopy":{"primaryText":string,"headline":string,"description":string},   // Meta lead/traffic ad
+  "leadMagnet":{"title":string,"description":string,"filters":string},      // filters = who it screens OUT
+  "followUp":[{"step":number,"channel":string,"timing":string,"message":string}], // 3-4 touches, HOT first
+  "objections":[{"objection":string,"response":string}]        // 3 common objections + reframes
+}`
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`
     const r = await fetch(url, {
