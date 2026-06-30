@@ -6,7 +6,7 @@ type Dim = 'campaign' | 'prize' | 'ad_name' | 'ad_set_name' | 'gender' | 'age' |
 
 const DIMS: [Dim, string][] = [
   ['campaign', 'Campaign'], ['prize', 'Prize'], ['ad_name', 'Ad'], ['ad_set_name', 'Ad group'],
-  ['gender', 'Gender'], ['age', 'Age band'], ['savings', 'Savings band'], ['platform', 'Platform'], ['creative_angle', 'Creative angle'],
+  ['gender', 'Gender'], ['age', 'Age band'], ['savings', 'Savings band'], ['platform', 'Platform'], ['creative_angle', 'Hook / angle'],
 ]
 
 const money = (x: number | null) => (x == null ? '—' : 'S$' + Math.round(x))

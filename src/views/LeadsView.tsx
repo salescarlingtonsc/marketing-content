@@ -17,7 +17,7 @@ export default function LeadsView() {
   const [msg, setMsg] = useState('')
 
   // manual add
-  const [m, setM] = useState({ name: '', phone: '', monthly_savings: '', age: '', occupation: '', prize: '' })
+  const [m, setM] = useState({ name: '', phone: '', monthly_savings: '', age: '', occupation: '', prize: '', hook: '' })
   // csv
   const [csvText, setCsvText] = useState('')
   const [rows, setRows] = useState<Record<string, string>[]>([])
@@ -50,9 +50,9 @@ export default function LeadsView() {
         name: m.name || null, phone: m.phone || null,
         monthly_savings: m.monthly_savings ? Number(m.monthly_savings) : null,
         age: m.age ? Number(m.age) : null, occupation: m.occupation || null, prize: m.prize || null,
-        platform, source: 'manual', consent: true,
+        creative_angle: m.hook || null, platform, source: 'manual', consent: true,
       }, cfg)
-      setM({ name: '', phone: '', monthly_savings: '', age: '', occupation: '', prize: '' })
+      setM({ name: '', phone: '', monthly_savings: '', age: '', occupation: '', prize: '', hook: '' })
       setMsg('✓ Lead added + scored'); refresh()
     } catch (e: any) { setMsg('Error: ' + (e.message ?? e)) }
   }
@@ -124,7 +124,7 @@ export default function LeadsView() {
         {/* Manual add */}
         <section style={{ flex: '1 1 260px', minWidth: 240 }}>
           <h3 style={{ fontSize: 14 }}>Add lead (manual)</h3>
-          {([['name', 'Name'], ['phone', 'Phone'], ['monthly_savings', 'Monthly savings (S$)'], ['age', 'Age'], ['occupation', 'Occupation'], ['prize', 'Prize']] as [keyof typeof m, string][]).map(([k, label]) => (
+          {([['name', 'Name'], ['phone', 'Phone'], ['monthly_savings', 'Monthly savings (S$)'], ['age', 'Age'], ['occupation', 'Occupation'], ['prize', 'Prize'], ['hook', 'Hook / angle']] as [keyof typeof m, string][]).map(([k, label]) => (
             <input key={k} placeholder={label} value={m[k]} onChange={(e) => setM((p) => ({ ...p, [k]: e.target.value }))} style={{ width: '100%', padding: 6, marginBottom: 6, boxSizing: 'border-box' }} />
           ))}
           <button onClick={submitManual} style={{ padding: '8px 14px', cursor: 'pointer', fontWeight: 600 }}>Add + score</button>

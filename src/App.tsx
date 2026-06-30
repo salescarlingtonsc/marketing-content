@@ -8,11 +8,13 @@ import GeneratorView from './views/GeneratorView'
 import LeadsView from './views/LeadsView'
 import DashboardView from './views/DashboardView'
 import RecommendationsView from './views/RecommendationsView'
+import ContentView from './views/ContentView'
 
-type View = 'leads' | 'dashboard' | 'recommend' | 'generate'
+type View = 'leads' | 'content' | 'dashboard' | 'recommend' | 'generate'
 
 const NAV: [View, string][] = [
   ['leads', '📥 Leads'],
+  ['content', '📈 Content'],
   ['dashboard', '📊 CPQL / Sales'],
   ['recommend', '🧠 This Week'],
   ['generate', '✍️ Generate'],
@@ -85,6 +87,7 @@ export default function App() {
       </nav>
 
       {view === 'leads' && <LeadsView />}
+      {view === 'content' && <ContentView />}
       {view === 'dashboard' && <DashboardView />}
       {view === 'recommend' && <RecommendationsView />}
       {view === 'generate' && <GeneratorView />}
