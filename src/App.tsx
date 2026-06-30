@@ -10,14 +10,16 @@ import DashboardView from './views/DashboardView'
 import RecommendationsView from './views/RecommendationsView'
 import ContentView from './views/ContentView'
 import ScoringView from './views/ScoringView'
+import MarketView from './views/MarketView'
 
-type View = 'leads' | 'content' | 'dashboard' | 'recommend' | 'generate' | 'scoring'
+type View = 'leads' | 'content' | 'dashboard' | 'recommend' | 'generate' | 'market' | 'scoring'
 
 const NAV: [View, string][] = [
   ['leads', '📥 Leads'],
   ['content', '📈 Content'],
   ['dashboard', '📊 CPQL / Sales'],
   ['recommend', '🧠 This Week'],
+  ['market', '🔎 Market'],
   ['generate', '✍️ Generate'],
 ]
 
@@ -92,6 +94,7 @@ export default function App() {
       {view === 'dashboard' && <DashboardView />}
       {view === 'recommend' && <RecommendationsView />}
       {view === 'generate' && <GeneratorView />}
+      {view === 'market' && <MarketView />}
       {view === 'scoring' && profile.role === 'owner' && <ScoringView />}
     </main>
   )
