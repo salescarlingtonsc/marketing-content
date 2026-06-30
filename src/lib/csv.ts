@@ -31,16 +31,24 @@ export function parseCsv(text: string): Record<string, string>[] {
 // Meta forms often store savings as free text ("More than $1,000", "$500-$1,000").
 export function parseSavings(raw: string | undefined): { value: number | null; band: string } {
   if (!raw) return { value: null, band: 'unknown' }
-  const s = raw.toLowerCase().replace(/[, ]/g, '')
-  let val: number | null = null
-  const kMatch = s.match(/(\d+(\.\d+)?)k/)
-  if (kMatch) val = Number(kMatch[1]) * 1000
-  const nums = (s.match(/\d+(\.\d+)?/g) || []).map(Number)
-  if (nums.length) val = Math.max(val ?? 0, ...nums)
-  let band = 'unknown'
-  if (val != null) band = val >= 1000 ? '1k+' : val >= 500 ? '500-1k' : '<500'
-  else if (/morethan|above|high|>|\+/.test(s)) band = '1k+'
-  return { value: val, band }
+  const norm = raw.toLowerCase().replace(/[,\s$]/g, '')
+  // collect numbers, expanding a trailing "k" (e.g. 2k -> 2000)
+  const nums: number[] = []
+  const re = /(\d+(?:\.\d+)?)(k)?/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(norm))) nums.push(Number(m[1]) * (m[2] ? 1000 : 1))
+  if (!nums.length) {
+    if (/morethan|above|over|high/.test(norm)) return { value: null, band: '1k+' }
+    return { value: null, band: 'unknown' }
+  }
+  // A range ("$500-$1,000") bands by its FLOOR; "below/under X" bands just under X;
+  // a single/"more than" number is treated as a floor. Fixes ranges banding upward.
+  const isRange = nums.length >= 2
+  const isBelow = /below|under|lessthan|upto|max|fewer|</.test(norm)
+  const driver = isRange ? Math.min(...nums) : isBelow ? nums[0] - 1 : nums[0]
+  const value = Math.max(...nums)
+  const band = driver >= 1000 ? '1k+' : driver >= 500 ? '500-1k' : '<500'
+  return { value, band }
 }
 
 export function bandFromSavings(v: number | null | undefined): string {
