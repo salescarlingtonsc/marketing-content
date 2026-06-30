@@ -85,6 +85,14 @@ export default function LeadsView() {
     } catch (e: any) { setMsg('Import error: ' + (e.message ?? e)) }
   }
 
+  function openWa(l: Lead) {
+    if (!l.consent) { setMsg('⚠️ No contact consent recorded for this lead — do not message (PDPA).'); return }
+    const d = (l.phone || '').replace(/\D/g, '')
+    const phone = d.length === 8 ? '65' + d : d
+    const msg = `Hi ${l.name || ''}, thanks for your interest! When is a good time for a quick chat?`
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
+  }
+
   async function setStatus(l: Lead, status: string) {
     let extra: any = {}
     if (status === 'Sold') { const amt = prompt('Sale amount / premium (S$)?'); extra.revenue = amt ? Number(amt) : undefined; extra.product = prompt('Product (optional)?') || undefined }
@@ -180,6 +188,7 @@ export default function LeadsView() {
                   <select value={l.status || 'new'} onChange={(e) => setStatus(l, e.target.value)} style={{ padding: 4 }}>
                     {LEAD_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
+                  {l.phone && <button onClick={() => openWa(l)} title="WhatsApp this lead" style={{ marginLeft: 6, cursor: 'pointer' }}>📱</button>}
                   {l.sold ? ` · 💰 S$${l.revenue ?? 0}` : ''}
                 </td>
               </tr>

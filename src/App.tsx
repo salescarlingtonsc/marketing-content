@@ -9,8 +9,9 @@ import LeadsView from './views/LeadsView'
 import DashboardView from './views/DashboardView'
 import RecommendationsView from './views/RecommendationsView'
 import ContentView from './views/ContentView'
+import ScoringView from './views/ScoringView'
 
-type View = 'leads' | 'content' | 'dashboard' | 'recommend' | 'generate'
+type View = 'leads' | 'content' | 'dashboard' | 'recommend' | 'generate' | 'scoring'
 
 const NAV: [View, string][] = [
   ['leads', '📥 Leads'],
@@ -71,7 +72,7 @@ export default function App() {
       {profile.role === 'owner' && <AdminUsers />}
 
       <nav style={{ display: 'flex', gap: 6, borderBottom: '1px solid #eee', margin: '14px 0 18px' }}>
-        {NAV.map(([v, label]) => (
+        {(profile.role === 'owner' ? [...NAV, ['scoring', '⚙️ Scoring'] as [View, string]] : NAV).map(([v, label]) => (
           <button
             key={v}
             onClick={() => setView(v)}
@@ -91,6 +92,7 @@ export default function App() {
       {view === 'dashboard' && <DashboardView />}
       {view === 'recommend' && <RecommendationsView />}
       {view === 'generate' && <GeneratorView />}
+      {view === 'scoring' && profile.role === 'owner' && <ScoringView />}
     </main>
   )
 }

@@ -59,6 +59,11 @@ export async function getScoringConfig(companyId?: string | null): Promise<Scori
     : DEFAULT_INVESTMENT_CONFIG
 }
 
+export async function updateScoringConfig(id: string, patch: { weights?: any; bands?: any; tier_cutoffs?: any; name?: string }) {
+  const { error } = await supabase.from('scoring_configs').update(patch).eq('id', id)
+  if (error) throw error
+}
+
 export async function listCampaigns(): Promise<Campaign[]> {
   const { data, error } = await supabase
     .from('ad_campaigns')
