@@ -16,10 +16,14 @@ export default function DashboardView() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [leads, setLeads] = useState<Lead[]>([])
   const [dim, setDim] = useState<Dim>('campaign')
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState('')
 
   async function refresh() {
-    setCampaigns(await listCampaigns())
-    setLeads(await listLeads())
+    setLoading(true); setErr('')
+    try { setCampaigns(await listCampaigns()); setLeads(await listLeads()) }
+    catch (e: any) { setErr(e.message ?? String(e)) }
+    finally { setLoading(false) }
   }
   useEffect(() => { refresh() }, [])
 
@@ -56,6 +60,8 @@ export default function DashboardView() {
 
   return (
     <div>
+      {loading && <p style={{ color: '#999', fontSize: 13 }}>Loading…</p>}
+      {err && <p style={{ color: '#b42318', fontSize: 13 }}>Error: {err}</p>}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
         <strong style={{ fontSize: 14 }}>Compare by:</strong>
         <select value={dim} onChange={(e) => setDim(e.target.value as Dim)} style={{ padding: 6 }}>

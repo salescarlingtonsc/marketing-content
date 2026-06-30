@@ -15,8 +15,12 @@ export default function ContentView() {
   const [msg, setMsg] = useState('')
   const [f, setF] = useState({ campaign_id: '', hook: '', platform: 'TikTok', url: '', views_48h: '', account_avg_48h: '', saves: '', shares: '', comments: '' })
 
+  const [loading, setLoading] = useState(true)
   async function refresh() {
-    setPosts(await listPosts()); setLeads(await listLeads()); setCampaigns(await listCampaigns())
+    setLoading(true)
+    try { setPosts(await listPosts()); setLeads(await listLeads()); setCampaigns(await listCampaigns()) }
+    catch (e: any) { setMsg('Load error: ' + (e.message ?? e)) }
+    finally { setLoading(false) }
   }
   useEffect(() => { refresh() }, [])
 
@@ -72,6 +76,7 @@ export default function ContentView() {
         <button onClick={submit} style={{ padding: '8px 14px', cursor: 'pointer', fontWeight: 600 }}>Log post</button>
         {livePreview != null && <span style={{ color: verdictColor(verdictFor(livePreview)), fontWeight: 600 }}>→ Outlier {livePreview} · {verdictFor(livePreview)}</span>}
       </section>
+      {loading && <p style={{ fontSize: 12, color: '#999' }}>Loading…</p>}
       {msg && <p style={{ fontSize: 12, color: '#555' }}>{msg}</p>}
 
       <div style={{ overflowX: 'auto' }}>

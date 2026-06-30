@@ -26,9 +26,12 @@ export default function LeadsView() {
   const [consent, setConsent] = useState(false)
   const [platform, setPlatform] = useState('TikTok')
 
+  const [loading, setLoading] = useState(true)
   async function refresh() {
-    setCampaigns(await listCampaigns())
-    setLeads(await listLeads(campaignId ? { campaign_id: campaignId } : undefined))
+    setLoading(true)
+    try { setCampaigns(await listCampaigns()); setLeads(await listLeads(campaignId ? { campaign_id: campaignId } : undefined)) }
+    catch (e: any) { setMsg('Load error: ' + (e.message ?? e)) }
+    finally { setLoading(false) }
   }
   useEffect(() => { getScoringConfig().then(setCfg) }, [])
   useEffect(() => { refresh() }, [campaignId])
@@ -118,6 +121,7 @@ export default function LeadsView() {
           {leads.length} leads · {['hot', 'warm', 'nurture', 'giveaway-only', 'trash'].map((t) => `${counts[t] || 0} ${t}`).join(' · ')}
         </span>
       </div>
+      {loading && <p style={{ fontSize: 12, color: '#999' }}>Loading…</p>}
       {msg && <p style={{ fontSize: 12, color: '#555' }}>{msg}</p>}
 
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>

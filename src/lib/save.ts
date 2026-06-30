@@ -1,8 +1,10 @@
 import { supabase } from './supabase'
 import type { Intake, ScoredHook } from '../types'
 
+export interface GenerationExtras { script?: any; adCopy?: any; leadMagnet?: any; followUp?: any; objections?: any }
+
 // Persists a generated campaign. Requires an authenticated session (RLS).
-export async function saveCampaign(intake: Intake, hooks: ScoredHook[]) {
+export async function saveCampaign(intake: Intake, hooks: ScoredHook[], extras?: GenerationExtras) {
   const { data: company, error: ce } = await supabase
     .from('companies')
     .insert({
@@ -26,6 +28,18 @@ export async function saveCampaign(intake: Intake, hooks: ScoredHook[]) {
   }))
   const { error: ie } = await supabase.from('content_ideas').insert(rows)
   if (ie) throw ie
+
+  // Persist the full generation so nothing is lost (the brain accumulates).
+  await supabase.from('generations').insert({
+    company_id: company!.id,
+    intake,
+    hooks: hooks.map((h) => ({ category: h.category, text: h.text, score: h.score })),
+    script: extras?.script ?? null,
+    ad_copy: extras?.adCopy ?? null,
+    lead_magnet: extras?.leadMagnet ?? null,
+    follow_up: extras?.followUp ?? null,
+    objections: extras?.objections ?? null,
+  })
 
   return { companyId: company!.id as string, count: rows.length }
 }

@@ -11,8 +11,17 @@ const typeColor: Record<string, string> = {
 export default function RecommendationsView() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [leads, setLeads] = useState<Lead[]>([])
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState('')
 
-  useEffect(() => { (async () => { setCampaigns(await listCampaigns()); setLeads(await listLeads()) })() }, [])
+  useEffect(() => {
+    (async () => {
+      setLoading(true); setErr('')
+      try { setCampaigns(await listCampaigns()); setLeads(await listLeads()) }
+      catch (e: any) { setErr(e.message ?? String(e)) }
+      finally { setLoading(false) }
+    })()
+  }, [])
 
   const campName = useMemo(() => Object.fromEntries(campaigns.map((c) => [c.id, c.name || '(unnamed)'])), [campaigns])
   const spend = useMemo<SpendByCampaign>(() => Object.fromEntries(campaigns.map((c) => [c.id, c.spent ?? 0])), [campaigns])
@@ -38,6 +47,8 @@ export default function RecommendationsView() {
       <p style={{ fontSize: 13, color: '#777', marginTop: 0 }}>
         Simple rules over your real data, with minimum-sample gates (needs ≥20 leads before a confident call).
       </p>
+      {loading && <p style={{ color: '#999', fontSize: 13 }}>Loading…</p>}
+      {err && <p style={{ color: '#b42318', fontSize: 13 }}>Error: {err}</p>}
 
       {actionable.length === 0 && (
         <p style={{ color: '#999', fontSize: 14 }}>

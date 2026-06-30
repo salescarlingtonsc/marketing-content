@@ -82,7 +82,10 @@ export default function GeneratorView() {
     const hooks = aiHooks.length ? aiHooks : result?.hooks ?? []
     if (!hooks.length) { setSaveMsg('Generate a campaign first.'); return }
     setSaveMsg('Saving…')
-    try { const r = await saveCampaign(intake, hooks); setSaveMsg(`✓ Saved "${intake.company}" + ${r.count} ideas`); loadSaved() }
+    try {
+      const r = await saveCampaign(intake, hooks, { script: aiScript, adCopy: aiExtra?.adCopy, leadMagnet: aiExtra?.leadMagnet, followUp: aiExtra?.followUp, objections: aiExtra?.objections })
+      setSaveMsg(`✓ Saved "${intake.company}" + ${r.count} ideas (full generation kept)`); loadSaved()
+    }
     catch (e: any) { setSaveMsg(`Save failed: ${e.message ?? e}`) }
   }
 
