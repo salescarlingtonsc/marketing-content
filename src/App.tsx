@@ -11,11 +11,13 @@ import RecommendationsView from './views/RecommendationsView'
 import ContentView from './views/ContentView'
 import ScoringView from './views/ScoringView'
 import MarketView from './views/MarketView'
+import ApprovalView from './views/ApprovalView'
 
-type View = 'leads' | 'content' | 'dashboard' | 'recommend' | 'generate' | 'market' | 'scoring'
+type View = 'leads' | 'content' | 'dashboard' | 'recommend' | 'generate' | 'market' | 'scoring' | 'review'
 
 const NAV: [View, string][] = [
   ['leads', '📥 Leads'],
+  ['review', '✅ Review'],
   ['content', '📈 Content'],
   ['dashboard', '📊 CPQL / Sales'],
   ['recommend', '🧠 This Week'],
@@ -90,6 +92,7 @@ export default function App() {
       </nav>
 
       {view === 'leads' && <LeadsView />}
+      {view === 'review' && <ApprovalView />}
       {view === 'content' && <ContentView />}
       {view === 'dashboard' && <DashboardView />}
       {view === 'recommend' && <RecommendationsView />}

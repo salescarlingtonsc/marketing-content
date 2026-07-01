@@ -5,6 +5,8 @@ import { scoreHook } from '../lib/score'
 import { saveCampaign, loadCampaigns } from '../lib/save'
 import type { SavedCampaign } from '../lib/save'
 import { FALLBACK_HOOKS } from '../data/hooks'
+import { downloadContentPack } from '../lib/contentPack'
+import { sendToReview } from '../lib/review'
 import type { GenerationResult, HookFormula, Intake, ScoredHook } from '../types'
 
 const DEFAULT_INTAKE: Intake = {
@@ -121,6 +123,25 @@ export default function GeneratorView() {
             <button onClick={generate} style={{ padding: '10px 18px', cursor: 'pointer', fontWeight: 600 }}>Generate (rules)</button>
             <button onClick={generateAI} style={{ padding: '10px 18px', cursor: 'pointer' }}>✨ AI mode (Gemini)</button>
             <button onClick={save} style={{ padding: '10px 18px', cursor: 'pointer' }}>💾 Save campaign</button>
+            <button
+              onClick={() => downloadContentPack({ intake, result, aiHooks, aiScript, aiExtra })}
+              disabled={!result && aiHooks.length === 0}
+              title={!result && aiHooks.length === 0 ? 'Generate a campaign first' : 'Download platform-ready zip'}
+              style={{ padding: '10px 18px', cursor: (!result && aiHooks.length === 0) ? 'not-allowed' : 'pointer' }}
+            >⬇ Download content pack</button>
+            <button
+              onClick={async () => {
+                const hooks = aiHooks.length ? aiHooks : result?.hooks ?? []
+                setSaveMsg('Sending to review…')
+                try {
+                  const script = aiScript ? `[HOOK] ${aiScript.hook ?? ''}\n[CONTEXT] ${aiScript.context ?? ''}\n[RE-HOOK] ${aiScript.rehook ?? ''}\n[PAYOFF] ${aiScript.payoff ?? ''}\n[CTA] ${aiScript.cta ?? ''}` : null
+                  const n = await sendToReview({ intake, hooks, caption: aiExtra?.adCopy?.primaryText ?? null, script, cta: aiScript?.cta ?? null, count: 3 })
+                  setSaveMsg(`✓ ${n} post(s) sent to ✅ Review (top hooks, staggered 6PM SGT)`)
+                } catch (e: any) { setSaveMsg('Review error: ' + (e.message ?? e)) }
+              }}
+              disabled={!result && aiHooks.length === 0}
+              style={{ padding: '10px 18px', cursor: (!result && aiHooks.length === 0) ? 'not-allowed' : 'pointer' }}
+            >📤 Send to review</button>
           </div>
           {aiStatus && <p style={{ fontSize: 12, color: '#888', marginTop: 8 }}>{aiStatus}</p>}
           {saveMsg && <p style={{ fontSize: 12, color: '#555', marginTop: 4 }}>{saveMsg}</p>}
